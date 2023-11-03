@@ -8,5 +8,6 @@
 
     <toc-element topic="Interleaving.md"/>
     <toc-element topic="home.md"/>
+    <toc-element topic="Data-Preparation.md"/>
     <toc-element topic="Pipeline.md"/>
 </instance-profile>
