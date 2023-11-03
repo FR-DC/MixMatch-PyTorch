@@ -1,3 +1,15 @@
+# MixMatch-PyTorch-CIFAR10
+
+This repository is an update from [YU1ut/MixMatch-pytorch](https://github.com/YU1ut/MixMatch-pytorch/)
+to work with the latest version of PyTorch and torchvision, and follow
+modern best practices for PyTorch code.
+
+## [Documentation](https://fr-dc.github.io/MixMatch-PyTorch-CIFAR10/home.html)
+
+---
+
+This README is copied from [YU1ut/MixMatch-pytorch](https://github.com/YU1ut/MixMatch-pytorch/)
+
 # MixMatch
 This is an unofficial PyTorch implementation of [MixMatch: A Holistic Approach to Semi-Supervised Learning](https://arxiv.org/abs/1905.02249). 
 The official Tensorflow implementation is [here](https://github.com/google-research/mixmatch).
