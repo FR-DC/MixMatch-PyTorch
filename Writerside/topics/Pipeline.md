@@ -35,16 +35,7 @@ graph LR
     C --Augment--> I[Unl. Augmented K]
 ```
 
-## Data Augmentation
-
-The data augmentation is simple
-
-```mermaid
-graph LR
-    A[Data] --> B[4 px Pad]
-    B --> C[Random Crop 32x32px]
-    C --> D[Random Horizontal Flip 50%]
-```
+See [Data Preperation](Data-Preparation.md) for more details.
 
 ## Model Architecture
 
