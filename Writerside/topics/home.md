@@ -16,4 +16,3 @@ This is an unofficial PyTorch implementation of
 - [YU1ut's PyTorch Implementation](https://github.com/YU1ut/MixMatch-pytorch/tree/master)
 - [Google Research's TensorFlow Implementation](https://github.com/google-research/mixmatch)
 
-
