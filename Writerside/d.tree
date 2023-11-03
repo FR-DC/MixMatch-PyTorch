@@ -6,5 +6,7 @@
                  name="doc"
                  start-page="starter-topic.md">
 
+    <toc-element topic="Interleaving.md"/>
     <toc-element topic="starter-topic.md"/>
+    <toc-element topic="Pipeline.md"/>
 </instance-profile>

@@ -94,11 +94,13 @@ flowchart TD
     MU --> XM[X Mix]
     MU --> YM[Y Mix]
     
-    XM --Predict--> YMP[Y Mix Pred.]
+    XM --> INT([Interleave])
+    INT --Predict--> YMP[Y Mix Pred.]
+    YMP --> RINT([Reverse Interleave])
     YM --> YMU[Y Mix Unl.]
     YM --> YML[Y Mix Lab.]
-    YMP --> YMPU[Y Mix Pred. Unl.]
-    YMP --> YMPL[Y Mix Pred. Lab.]
+    RINT --> YMPU[Y Mix Pred. Unl.]
+    RINT --> YMPL[Y Mix Pred. Lab.]
     
     YMU --> UL([Cross Entropy Loss])
     YMPU --> UL
@@ -115,15 +117,20 @@ flowchart TD
     L --Backward--> M[Model]
 ```
 
-There are a few things to note:
-- Concatenation happens on the Batch axis, which is the first axis.
-- Predict uses the model's forward pass.
-  - **The first predict requires no gradient.**
-- The Mix Up Shuffling happens on the Batch axis, which also includes the
-  augmentations. So if your data is of shape (B, K, C, H, W), the shuffling
-  happens on both B and K. (Use reshape before shuffling)
+We have both **Data** and **Data List**, as the augmentations create a new
+axis in the data.
+
+A few things to note:
+- `Concat` is on the Batch axis, the 1st axis.
+- `Predict` uses the model's forward pass.
+  - The Label Guessing Prediction, `Predict(X Unl. K)`, doesn't use gradient.
+- The Mix Up Shuffling is on the Batch axis, which includes the augmentations.
+  If the data is of shape (B, K, C, H, W), the shuffling happens on both B and 
+  K.
 - CIFAR10 (and most datasets) are not even, use `drop_last` on the
   DataLoader to avoid errors.
+- `Interleave` is not a well-documented step in the paper. See our 
+  [Interleaving](Interleaving.md) document for more details.
 
 ### Details
 
