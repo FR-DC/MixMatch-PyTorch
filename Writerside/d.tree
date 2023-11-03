@@ -3,11 +3,13 @@
         SYSTEM "https://resources.jetbrains.com/writerside/1.0/product-profile.dtd">
 
 <instance-profile id="d"
-                 name="doc"
+                 name="MixMatch PyTorch Documentation"
                  start-page="home.md">
 
-    <toc-element topic="Interleaving.md"/>
     <toc-element topic="home.md"/>
-    <toc-element topic="Data-Preparation.md"/>
-    <toc-element topic="Pipeline.md"/>
+    <toc-element toc-title="Pipeline">
+        <toc-element topic="Pipeline.md"/>
+        <toc-element topic="Data-Preparation.md"/>
+        <toc-element topic="Interleaving.md"/>
+    </toc-element>
 </instance-profile>
