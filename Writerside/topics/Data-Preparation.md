@@ -86,11 +86,12 @@ graph TD
     UD --Augment--> UDA[Unl. Aug ...]
     UD --Augment--> UDAK[Unl. Aug K]
     LD --Augment--> LDA[Lab. Aug]
-    DT[(Dataset)] -------> DTT[Test Dataset]
+    DT[(Dataset)] --Train=False-------> DTT[Test Dataset]
 ```
 
 > In total, 5 datasets are created, however, this shouldn't impact performance
 > as they are all on-demand.
+> Also note that only the test dataset has Train=False, the rest are all True.
 {style='note'}
 
 ### Splitting Unlabelled to K Augmentations
