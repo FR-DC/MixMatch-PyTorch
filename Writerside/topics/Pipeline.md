@@ -69,11 +69,11 @@ flowchart TD
     YLO --> YC([Concat])
     YUPRK --> YC([Concat])
     
-    XC --> X
-    YC --> Y
+    XC --> X[X Concat.]
+    YC --> Y[Y Concat.]
 
-    X[X] --> S
-    Y[Y] --> S([Shuffler])
+    X[Y] --> S([Shuffler])
+    Y[X] --> S
     S --> XS[X Shuffled]
     S --> YS[Y Shuffled]
     X & XS --> MU([Mix Up])
