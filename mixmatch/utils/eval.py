@@ -35,7 +35,7 @@ def sharpen(y: torch.Tensor, temp: float) -> torch.Tensor:
     y_sharp = y ** (1 / temp)
     # Sharpening will change the sum of the predictions.
     y_sharp /= y_sharp.sum(dim=1, keepdim=True)
-    return y_sharp.detach()
+    return y_sharp
 
 
 def guess_labels(
@@ -49,7 +49,7 @@ def guess_labels(
     return y_unl
 
 
-def train(
+def train_epoch(
     *,
     train_lbl_dl: DataLoader,
     train_unl_dl: DataLoader,
@@ -87,8 +87,6 @@ def train(
             unl_iter = iter(train_unl_dl)
             x_unls, _ = next(unl_iter)
 
-        batch_size = x_lbl.size(0)
-
         y_lbl = one_hot(y_lbl.long(), num_classes=10)
 
         x_lbl = x_lbl.to(device)
@@ -105,6 +103,7 @@ def train(
 
         # interleave labeled and unlabeled samples between batches to
         # get correct batchnorm calculation
+        batch_size = x_lbl.shape[0]
         x_mix = list(torch.split(x_mix, batch_size))
         x_mix = interleave(x_mix, batch_size)
 

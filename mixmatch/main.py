@@ -10,7 +10,7 @@ from torch.utils.data import DataLoader
 from mixmatch.dataset.cifar10 import get_dataloaders
 from models.wideresnet import WideResNet
 from utils.ema import WeightEMA
-from utils.eval import validate, train
+from utils.eval import validate, train_epoch
 from utils.loss import SemiLoss
 
 
@@ -93,7 +93,7 @@ def main(
     for epoch in range(epochs):
         print("\nEpoch: [%d | %d] LR: %f" % (epoch + 1, epochs, lr))
 
-        train_loss, train_lbl_loss, train_unl_loss = train(
+        train_loss, train_lbl_loss, train_unl_loss = train_epoch(
             train_lbl_dl=train_lbl_dl,
             train_unl_dl=train_unl_dl,
             model=model,
