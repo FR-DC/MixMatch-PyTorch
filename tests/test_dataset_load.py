@@ -17,8 +17,8 @@ def test_load_seeded():
         classes,
     ) = get_dataloaders(
         dataset_dir="./data",
-        train_lbl_size=0.005,
-        train_unl_size=0.980,
+        n_train_lbl=0.005,
+        n_train_unl=0.980,
         batch_size=batch_size,
         seed=seed,
     )
@@ -35,8 +35,8 @@ def test_load_seeded():
         classes,
     ) = get_dataloaders(
         dataset_dir="./data",
-        train_lbl_size=0.005,
-        train_unl_size=0.980,
+        n_train_lbl=0.005,
+        n_train_unl=0.980,
         batch_size=batch_size,
         seed=seed,
     )

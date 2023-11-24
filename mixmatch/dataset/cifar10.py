@@ -1,11 +1,13 @@
 from __future__ import annotations
+
+from dataclasses import dataclass, KW_ONLY
 from pathlib import Path
-from typing import Callable, Sequence, List
+from typing import Callable, Sequence
 
 import numpy as np
 import torch
 from sklearn.model_selection import train_test_split
-from torch.utils.data import DataLoader, Subset, Dataset
+from torch.utils.data import DataLoader
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
 from torchvision.transforms.v2 import (
@@ -24,12 +26,7 @@ tf_aug = transforms.Compose(
     [
         lambda x: torch.nn.functional.pad(
             x,
-            (
-                4,
-                4,
-                4,
-                4,
-            ),
+            (4,) * 4,
             mode="reflect",
         ),
         RandomCrop(32),
@@ -38,50 +35,33 @@ tf_aug = transforms.Compose(
 )
 
 
+@dataclass
 class CIFAR10Subset(CIFAR10):
-    def __init__(
-        self,
-        root: str,
-        idxs: Sequence[int] | None = None,
-        train: bool = True,
-        transform: Callable | None = None,
-        target_transform: Callable | None = None,
-        download: bool = False,
-    ):
+    _: KW_ONLY
+    root: str
+    idxs: Sequence[int] | None = None
+    train: bool = True
+    transform: Callable | None = None
+    target_transform: Callable | None = None
+    download: bool = False
+
+    def __post_init__(self):
         super().__init__(
-            root,
-            train=train,
-            transform=transform,
-            target_transform=target_transform,
-            download=download,
+            root=self.root,
+            train=self.train,
+            transform=self.transform,
+            target_transform=self.target_transform,
         )
-        if idxs is not None:
-            self.data = self.data[idxs]
-            self.targets = np.array(self.targets)[idxs].tolist()
+        if self.idxs is not None:
+            self.data = self.data[self.idxs]
+            self.targets = np.array(self.targets)[self.idxs].tolist()
 
 
+@dataclass
 class CIFAR10SubsetKAug(CIFAR10Subset):
-    def __init__(
-        self,
-        root: str,
-        k_augs: int,
-        aug: Callable,
-        idxs: Sequence[int] | None = None,
-        train: bool = True,
-        transform: Callable | None = None,
-        target_transform: Callable | None = None,
-        download: bool = False,
-    ):
-        super().__init__(
-            root=root,
-            idxs=idxs,
-            train=train,
-            transform=transform,
-            target_transform=target_transform,
-            download=download,
-        )
-        self.k_augs = k_augs
-        self.aug = aug
+    _: KW_ONLY
+    k_augs: int = 1
+    aug: Callable = lambda x: x
 
     def __getitem__(self, item):
         img, target = super().__getitem__(item)
@@ -90,8 +70,8 @@ class CIFAR10SubsetKAug(CIFAR10Subset):
 
 def get_dataloaders(
     dataset_dir: Path | str,
-    train_lbl_size: float = 0.005,
-    train_unl_size: float = 0.980,
+    n_train_lbl: float = 0.005,
+    n_train_unl: float = 0.980,
     batch_size: int = 48,
     num_workers: int = 0,
     seed: int | None = 42,
@@ -104,8 +84,8 @@ def get_dataloaders(
 
     Args:
         dataset_dir: The directory where the dataset is stored.
-        train_lbl_size: The size of the labelled training set.
-        train_unl_size: The size of the unlabelled training set.
+        n_train_lbl: The size of the labelled training set.
+        n_train_unl: The size of the unlabelled training set.
         batch_size: The batch size.
         num_workers: The number of workers for the dataloaders.
         seed: The seed for the random number generators. If None, then it'll be
@@ -133,35 +113,35 @@ def get_dataloaders(
         transform=tf_preproc,
     )
 
-    train_size = len(src_train_ds)
-    train_unl_size = int(train_size * train_unl_size)
-    train_lbl_size = int(train_size * train_lbl_size)
-    val_size = int(train_size - train_unl_size - train_lbl_size)
+    n_train = len(src_train_ds)
+    n_train_unl = int(n_train * n_train_unl)
+    n_train_lbl = int(n_train * n_train_lbl)
+    n_val = int(n_train - n_train_unl - n_train_lbl)
 
     targets = np.array(src_train_ds.targets)
     ixs = np.arange(len(targets))
-    train_unl_ixs, lbl_ixs = train_test_split(
+    ixs_train_unl, ixs_lbl = train_test_split(
         ixs,
-        train_size=train_unl_size,
+        train_size=n_train_unl,
         stratify=targets,
     )
-    lbl_targets = targets[lbl_ixs]
+    lbl_targets = targets[ixs_lbl]
 
-    val_ixs, train_lbl_ixs = train_test_split(
-        lbl_ixs,
-        train_size=val_size,
+    ixs_val, ixs_train_lbl = train_test_split(
+        ixs_lbl,
+        train_size=n_val,
         stratify=lbl_targets,
     )
 
     ds_args = dict(root=dataset_dir, train=True, download=True, transform=tf_preproc)
 
     train_lbl_ds = CIFAR10SubsetKAug(
-        **ds_args, idxs=train_lbl_ixs, k_augs=1, aug=tf_aug
+        **ds_args, idxs=ixs_train_lbl, k_augs=1, aug=tf_aug
     )
     train_unl_ds = CIFAR10SubsetKAug(
-        **ds_args, idxs=train_unl_ixs, k_augs=2, aug=tf_aug
+        **ds_args, idxs=ixs_train_unl, k_augs=2, aug=tf_aug
     )
-    val_ds = CIFAR10Subset(**ds_args, idxs=val_ixs)
+    val_ds = CIFAR10Subset(**ds_args, idxs=ixs_val)
 
     dl_args = dict(
         batch_size=batch_size,

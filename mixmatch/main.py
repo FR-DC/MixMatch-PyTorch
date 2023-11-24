@@ -67,8 +67,8 @@ def main(
         classes,
     ) = get_dataloaders(
         dataset_dir="./data",
-        train_lbl_size=train_lbl_size,
-        train_unl_size=train_unl_size,
+        n_train_lbl=train_lbl_size,
+        n_train_unl=train_unl_size,
         batch_size=batch_size,
         seed=seed,
     )
