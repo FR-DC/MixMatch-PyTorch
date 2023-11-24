@@ -60,7 +60,7 @@ def main(
     print(f"==> Preparing cifar10")
 
     dm = CIFAR10DataModule(
-        dataset_dir="./data",
+        dir="./data",
         n_train_lbl=train_lbl_size,
         n_train_unl=train_unl_size,
         batch_size=batch_size,
