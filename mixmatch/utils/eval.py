@@ -114,18 +114,14 @@ def train(
         y_mix_unl_pred = torch.cat(y_mix_pred[1:], dim=0)
         y_mix_unl = y_mix[batch_size:]
 
-        # TODO: Pretty ugly that we throw in epoch, epochs and lambda_u here
-        loss_lbl, loss_unl, loss_unl_scale = loss_fn(
+        loss_lbl, loss_unl = loss_fn(
             x_lbl=y_mix_lbl_pred,
             y_lbl=y_mix_lbl,
             x_unl=y_mix_unl_pred,
             y_unl=y_mix_unl,
-            epoch=epoch + batch_idx / train_iters,
-            loss_unl_scale=unl_loss_scale,
-            epochs=epochs,
         )
-
-        loss = loss_lbl + loss_unl_scale * loss_unl
+        loss_unl_scale = (epoch + batch_idx / train_iters) / epochs * unl_loss_scale
+        loss = loss_lbl + loss_unl * loss_unl_scale
 
         losses.append(loss)
         losses_x.append(loss_lbl)
