@@ -68,95 +68,86 @@ class CIFAR10SubsetKAug(CIFAR10Subset):
         return tuple(self.aug(img) for _ in range(self.k_augs)), target
 
 
-def get_dataloaders(
-    dataset_dir: Path | str,
-    n_train_lbl: float = 0.005,
-    n_train_unl: float = 0.980,
-    batch_size: int = 48,
-    num_workers: int = 0,
-    seed: int | None = 42,
-) -> tuple[DataLoader, DataLoader, DataLoader, DataLoader, list[str]]:
-    """Get the dataloaders for the CIFAR10 dataset.
+import pytorch_lightning as pl
 
-    Notes:
-        The train_lbl_size and train_unl_size must sum to less than 1.
-        The leftover data is used for the validation set.
 
-    Args:
-        dataset_dir: The directory where the dataset is stored.
-        n_train_lbl: The size of the labelled training set.
-        n_train_unl: The size of the unlabelled training set.
-        batch_size: The batch size.
-        num_workers: The number of workers for the dataloaders.
-        seed: The seed for the random number generators. If None, then it'll be
-            non-deterministic.
+class CIFAR10DataModule(pl.LightningDataModule):
+    def __init__(
+            self,
+            dataset_dir: Path | str,
+            n_train_lbl: float = 0.005,
+            n_train_unl: float = 0.980,
+            batch_size: int = 48,
+            num_workers: int = 0,
+            seed: int | None = 42,
+    ):
+        super().__init__()
+        self.dir = dataset_dir
+        self.n_train_lbl = n_train_lbl
+        self.n_train_unl = n_train_unl
+        self.batch_size = batch_size
+        self.num_workers = num_workers
+        deterministic = seed is not None
 
-    Returns:
-        4 DataLoaders: train_lbl_dl, train_unl_dl, val_unl_dl, test_dl
-    """
-    deterministic = seed is not None
+        if deterministic:
+            torch.manual_seed(seed)
+            np.random.seed(seed)
 
-    if deterministic:
-        torch.manual_seed(seed)
-        np.random.seed(seed)
+        self.ds_args = dict(root=self.dir, train=True, download=True, transform=tf_preproc, )
+        self.dl_args = dict(
+            batch_size=self.batch_size,
+            num_workers=self.num_workers,
+        )
 
-    src_train_ds = CIFAR10(
-        dataset_dir,
-        train=True,
-        download=True,
-        transform=tf_preproc,
-    )
-    src_test_ds = CIFAR10(
-        dataset_dir,
-        train=False,
-        download=True,
-        transform=tf_preproc,
-    )
+    def setup(self, stage: str | None = None):
+        src_train_ds = CIFAR10(
+            self.dir,
+            train=True,
+            download=True,
+            transform=tf_preproc,
+        )
+        self.test_ds = CIFAR10(
+            self.dir,
+            train=False,
+            download=True,
+            transform=tf_preproc,
+        )
 
-    n_train = len(src_train_ds)
-    n_train_unl = int(n_train * n_train_unl)
-    n_train_lbl = int(n_train * n_train_lbl)
-    n_val = int(n_train - n_train_unl - n_train_lbl)
+        n_train = len(src_train_ds)
+        n_train_unl = int(n_train * self.n_train_unl)
+        n_train_lbl = int(n_train * self.n_train_lbl)
+        n_val = int(n_train - n_train_unl - n_train_lbl)
 
-    targets = np.array(src_train_ds.targets)
-    ixs = np.arange(len(targets))
-    ixs_train_unl, ixs_lbl = train_test_split(
-        ixs,
-        train_size=n_train_unl,
-        stratify=targets,
-    )
-    lbl_targets = targets[ixs_lbl]
+        targets = np.array(src_train_ds.targets)
+        ixs = np.arange(len(targets))
+        ixs_train_unl, ixs_lbl = train_test_split(
+            ixs,
+            train_size=n_train_unl,
+            stratify=targets,
+        )
+        lbl_targets = targets[ixs_lbl]
 
-    ixs_val, ixs_train_lbl = train_test_split(
-        ixs_lbl,
-        train_size=n_val,
-        stratify=lbl_targets,
-    )
+        ixs_val, ixs_train_lbl = train_test_split(
+            ixs_lbl,
+            train_size=n_val,
+            stratify=lbl_targets,
+        )
+        self.train_lbl_ds = CIFAR10SubsetKAug(
+            **self.ds_args, idxs=ixs_train_lbl, k_augs=1, aug=tf_aug
+        )
+        self.train_unl_ds = CIFAR10SubsetKAug(
+            **self.ds_args, idxs=ixs_train_unl, k_augs=2, aug=tf_aug
+        )
+        self.val_ds = CIFAR10Subset(**self.ds_args, idxs=ixs_val)
 
-    ds_args = dict(root=dataset_dir, train=True, download=True, transform=tf_preproc)
+    def train_lbl_dataloader(self):
+        return DataLoader(self.train_lbl_ds, shuffle=True, drop_last=True, **self.dl_args)
 
-    train_lbl_ds = CIFAR10SubsetKAug(
-        **ds_args, idxs=ixs_train_lbl, k_augs=1, aug=tf_aug
-    )
-    train_unl_ds = CIFAR10SubsetKAug(
-        **ds_args, idxs=ixs_train_unl, k_augs=2, aug=tf_aug
-    )
-    val_ds = CIFAR10Subset(**ds_args, idxs=ixs_val)
+    def train_unl_dataloader(self):
+        return DataLoader(self.train_unl_ds, shuffle=True, drop_last=True, **self.dl_args)
 
-    dl_args = dict(
-        batch_size=batch_size,
-        num_workers=num_workers,
-    )
+    def val_dataloader(self):
+        return DataLoader(self.val_ds, shuffle=False, **self.dl_args)
 
-    train_lbl_dl = DataLoader(train_lbl_ds, shuffle=True, drop_last=True, **dl_args)
-    train_unl_dl = DataLoader(train_unl_ds, shuffle=True, drop_last=True, **dl_args)
-    val_dl = DataLoader(val_ds, shuffle=False, **dl_args)
-    test_dl = DataLoader(src_test_ds, shuffle=False, **dl_args)
-
-    return (
-        train_lbl_dl,
-        train_unl_dl,
-        val_dl,
-        test_dl,
-        src_train_ds.classes,
-    )
+    def test_dataloader(self):
+        return DataLoader(self.test_ds, shuffle=False, **self.dl_args)

@@ -7,7 +7,7 @@ import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
 
-from mixmatch.dataset.cifar10 import get_dataloaders
+from mixmatch.dataset.cifar10 import CIFAR10DataModule
 from models.wideresnet import WideResNet
 from utils.ema import WeightEMA
 from utils.eval import validate, train_epoch
@@ -59,19 +59,15 @@ def main(
     # Data
     print(f"==> Preparing cifar10")
 
-    (
-        train_lbl_dl,
-        train_unl_dl,
-        val_dl,
-        test_dl,
-        classes,
-    ) = get_dataloaders(
+    dm = CIFAR10DataModule(
         dataset_dir="./data",
         n_train_lbl=train_lbl_size,
         n_train_unl=train_unl_size,
         batch_size=batch_size,
         seed=seed,
     )
+    dm.setup()
+    classes = dm.test_ds.classes
 
     # Model
     print("==> creating WRN-28-2")
@@ -94,8 +90,8 @@ def main(
         print("\nEpoch: [%d | %d] LR: %f" % (epoch + 1, epochs, lr))
 
         train_loss, train_lbl_loss, train_unl_loss = train_epoch(
-            train_lbl_dl=train_lbl_dl,
-            train_unl_dl=train_unl_dl,
+            train_lbl_dl=dm.train_lbl_dataloader(),
+            train_unl_dl=dm.train_unl_dataloader(),
             model=model,
             optim=train_optim,
             ema_optim=ema_optim,
@@ -117,9 +113,9 @@ def main(
                 device=device,
             )
 
-        _, train_acc = val_ema(train_lbl_dl)
-        val_loss, val_acc = val_ema(val_dl)
-        test_loss, test_acc = val_ema(test_dl)
+        _, train_acc = val_ema(dm.train_lbl_dataloader())
+        val_loss, val_acc = val_ema(dm.val_dataloader())
+        test_loss, test_acc = val_ema(dm.test_dataloader())
 
         best_acc = max(val_acc, best_acc)
         test_accs.append(test_acc)
