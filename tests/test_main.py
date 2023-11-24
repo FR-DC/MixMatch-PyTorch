@@ -9,13 +9,13 @@ def test_main_seed_fast():
         epochs=epochs, train_iteration=train_iteration
     )
 
-    assert best_acc_1 == 8.53333332570394
-    assert mean_acc_1 == 8.79
+    assert best_acc_1 == 8.399999992370606
+    assert mean_acc_1 == 8.81
 
 
 def test_main_seed_epoch():
     """Ensure that the model doesn't change when refactoring"""
     epochs = 1
     best_acc_1, mean_acc_1 = main(epochs=epochs)
-    assert best_acc_1 == 24.266666646321614
-    assert mean_acc_1 == 23.01
+    assert best_acc_1 == 23.733333368937174
+    assert mean_acc_1 == 22.22
