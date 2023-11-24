@@ -179,12 +179,8 @@ def get_dataloaders(
         num_workers=num_workers,
     )
 
-    train_lbl_dl = DataLoader(
-        train_lbl_ds, shuffle=True, drop_last=True, **dl_args
-    )
-    train_unl_dl = DataLoader(
-        train_unl_ds, shuffle=True, drop_last=True, **dl_args
-    )
+    train_lbl_dl = DataLoader(train_lbl_ds, shuffle=True, drop_last=True, **dl_args)
+    train_unl_dl = DataLoader(train_unl_ds, shuffle=True, drop_last=True, **dl_args)
     val_dl = DataLoader(val_ds, shuffle=False, **dl_args)
     test_dl = DataLoader(src_test_ds, shuffle=False, **dl_args)
 

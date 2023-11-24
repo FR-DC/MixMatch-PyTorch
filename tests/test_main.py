@@ -5,9 +5,7 @@ def test_main_seed_fast():
     """The fast variant to ensure that the model doesn't change."""
     epochs = 1
     train_iteration = 8
-    best_acc_1, mean_acc_1 = main(
-        epochs=epochs, train_iteration=train_iteration
-    )
+    best_acc_1, mean_acc_1 = main(epochs=epochs, train_iteration=train_iteration)
 
     assert best_acc_1 == 8.399999992370606
     assert mean_acc_1 == 8.81

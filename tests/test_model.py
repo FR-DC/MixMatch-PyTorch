@@ -24,7 +24,5 @@ def test_model_seeded():
     for param_1, param_2 in zip(model_1.parameters(), model_2.parameters()):
         assert torch.all(torch.eq(param_1, param_2))
 
-    for param_1, param_2 in zip(
-        ema_model_1.parameters(), ema_model_2.parameters()
-    ):
+    for param_1, param_2 in zip(ema_model_1.parameters(), ema_model_2.parameters()):
         assert torch.all(torch.eq(param_1, param_2))

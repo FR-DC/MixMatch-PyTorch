@@ -112,9 +112,7 @@ class NetworkBlock(nn.Module):
 
 
 class WideResNet(nn.Module):
-    def __init__(
-        self, num_classes, depth=28, widen_factor=2, dropRate=0.0, seed=42
-    ):
+    def __init__(self, num_classes, depth=28, widen_factor=2, dropRate=0.0, seed=42):
         torch.manual_seed(42)
         super(WideResNet, self).__init__()
         nChannels = [
@@ -141,13 +139,9 @@ class WideResNet(nn.Module):
             activate_before_residual=True,
         )
         # 2nd block
-        self.block2 = NetworkBlock(
-            n, nChannels[1], nChannels[2], block, 2, dropRate
-        )
+        self.block2 = NetworkBlock(n, nChannels[1], nChannels[2], block, 2, dropRate)
         # 3rd block
-        self.block3 = NetworkBlock(
-            n, nChannels[2], nChannels[3], block, 2, dropRate
-        )
+        self.block3 = NetworkBlock(n, nChannels[2], nChannels[3], block, 2, dropRate)
         # global average pooling and classifier
         self.bn1 = nn.BatchNorm2d(nChannels[3], momentum=0.001)
         self.relu = nn.LeakyReLU(negative_slope=0.1, inplace=True)
