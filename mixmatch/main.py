@@ -8,7 +8,7 @@ import torch.optim as optim
 from torch.utils.data import DataLoader
 
 from mixmatch.dataset.cifar10 import CIFAR10DataModule
-from models.wideresnet import WideResNet
+from models.wideresnet import WideResNet, WideResNetModule
 from utils.ema import WeightEMA
 from utils.eval import validate, train_epoch
 from utils.loss import SemiLoss
@@ -72,7 +72,7 @@ def main(
     # Model
     print("==> creating WRN-28-2")
 
-    model = WideResNet(num_classes=len(classes)).to(device)
+    model = WideResNetModule(n_classes=len(classes)).to(device)
     ema_model = deepcopy(model).to(device)
     for param in ema_model.parameters():
         param.detach_()

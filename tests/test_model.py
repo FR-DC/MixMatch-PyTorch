@@ -7,7 +7,7 @@ def test_model_seeded():
     """Test that the model is always initialized the same way when seeded."""
 
     def create_model(ema=False):
-        model_ = WideResNet(num_classes=10)
+        model_ = WideResNet(n_classes=10)
         model_ = model_.cuda()
 
         if ema:
