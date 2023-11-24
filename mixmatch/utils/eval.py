@@ -30,16 +30,23 @@ def mix_up(
     return x_mix, y_mix
 
 
+def sharpen(y: torch.Tensor, temp: float) -> torch.Tensor:
+    """Sharpen the predictions by raising them to the power of 1 / temp"""
+    y_sharp = y ** (1 / temp)
+    # Sharpening will change the sum of the predictions.
+    y_sharp /= y_sharp.sum(dim=1, keepdim=True)
+    return y_sharp.detach()
+
+
 def guess_labels(
     model: nn.Module,
     x_unls: list[torch.Tensor],
-    sharpen_temp: float,
 ) -> torch.Tensor:
     """Guess labels from the unlabelled data"""
-    y_unls = [torch.softmax(model(u), dim=1) for u in x_unls]
-    p = sum(y_unls) / 2
-    pt = p ** (1 / sharpen_temp)
-    return pt / pt.sum(dim=1, keepdim=True).detach()
+    y_unls: list[torch.Tensor] = [torch.softmax(model(u), dim=1) for u in x_unls]
+    # The sum will sum the tensors in the list, it doesn't reduce the tensors
+    y_unl = sum(y_unls) / len(y_unls)
+    return y_unl
 
 
 def train(
@@ -89,11 +96,8 @@ def train(
         x_unls = [u.to(device) for u in x_unls]
 
         with torch.no_grad():
-            y_unl = guess_labels(
-                model=model,
-                x_unls=x_unls,
-                sharpen_temp=sharpen_temp,
-            )
+            y_unl = guess_labels(model=model, x_unls=x_unls)
+            y_unl = sharpen(y_unl, sharpen_temp)
 
         x = torch.cat([x_lbl, *x_unls], dim=0)
         y = torch.cat([y_lbl, y_unl, y_unl], dim=0)
