@@ -20,7 +20,6 @@ def main(
     epochs: int = 1024,
     batch_size: int = 64,
     lr: float = 0.002,
-    n_labeled: int = 250,
     train_iteration: int = 1024,
     ema_decay: float = 0.999,
     lambda_u: float = 75,
