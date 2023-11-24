@@ -25,17 +25,36 @@ def main(
     mix_beta_alpha: float = 0.75,
     sharpen_temp: float = 0.5,
     device: str = "cuda",
-    seed: int = 42,
+    seed: int | None = 42,
     train_lbl_size: int = 0.005,
     train_unl_size: int = 0.980,
 ):
-    random.seed(seed)
-    np.random.seed(seed)
-    torch.manual_seed(seed)
-    torch.cuda.manual_seed_all(seed)
+    """The main function to run the MixMatch algorithm
 
-    torch.backends.cudnn.deterministic = True
-    torch.backends.cudnn.benchmark = False
+    Args:
+        epochs: Number of epochs to run.
+        batch_size: The batch size to use.
+        lr: The learning rate to use.
+        train_iteration: The number of iterations to train for.
+        ema_wgt_decay: The weight decay to use for the EMA model.
+        unl_loss_scale: The scaling factor for the unlabeled loss.
+        mix_beta_alpha: The beta alpha to use for the mixup.
+        sharpen_temp: The temperature to use for sharpening.
+        device: The device to use.
+        seed: The seed to use. If None, then it'll be non-deterministic.
+        train_lbl_size: The size of the labeled training set.
+        train_unl_size: The size of the unlabeled training set.
+    """
+    deterministic = seed is not None
+
+    if deterministic:
+        random.seed(seed)
+        np.random.seed(seed)
+        torch.manual_seed(seed)
+        torch.cuda.manual_seed_all(seed)
+
+        torch.backends.cudnn.deterministic = True
+        torch.backends.cudnn.benchmark = False
 
     # Data
     print(f"==> Preparing cifar10")

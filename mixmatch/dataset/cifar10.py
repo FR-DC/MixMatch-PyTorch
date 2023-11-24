@@ -94,7 +94,7 @@ def get_dataloaders(
     train_unl_size: float = 0.980,
     batch_size: int = 48,
     num_workers: int = 0,
-    seed: int = 42,
+    seed: int | None = 42,
 ) -> tuple[DataLoader, DataLoader, DataLoader, DataLoader, list[str]]:
     """Get the dataloaders for the CIFAR10 dataset.
 
@@ -108,13 +108,18 @@ def get_dataloaders(
         train_unl_size: The size of the unlabelled training set.
         batch_size: The batch size.
         num_workers: The number of workers for the dataloaders.
-        seed: The seed for the random number generators.
+        seed: The seed for the random number generators. If None, then it'll be
+            non-deterministic.
 
     Returns:
         4 DataLoaders: train_lbl_dl, train_unl_dl, val_unl_dl, test_dl
     """
-    torch.manual_seed(seed)
-    np.random.seed(seed)
+    deterministic = seed is not None
+
+    if deterministic:
+        torch.manual_seed(seed)
+        np.random.seed(seed)
+
     src_train_ds = CIFAR10(
         dataset_dir,
         train=True,
@@ -148,31 +153,15 @@ def get_dataloaders(
         stratify=lbl_targets,
     )
 
+    ds_args = dict(root=dataset_dir, train=True, download=True, transform=tf_preproc)
+
     train_lbl_ds = CIFAR10SubsetKAug(
-        dataset_dir,
-        idxs=train_lbl_ixs,
-        train=True,
-        transform=tf_preproc,
-        download=True,
-        k_augs=1,
-        aug=tf_aug,
+        **ds_args, idxs=train_lbl_ixs, k_augs=1, aug=tf_aug
     )
     train_unl_ds = CIFAR10SubsetKAug(
-        dataset_dir,
-        idxs=train_unl_ixs,
-        train=True,
-        transform=tf_preproc,
-        download=True,
-        k_augs=2,
-        aug=tf_aug,
+        **ds_args, idxs=train_unl_ixs, k_augs=2, aug=tf_aug
     )
-    val_ds = CIFAR10Subset(
-        dataset_dir,
-        idxs=val_ixs,
-        train=True,
-        transform=tf_preproc,
-        download=True,
-    )
+    val_ds = CIFAR10Subset(**ds_args, idxs=val_ixs)
 
     dl_args = dict(
         batch_size=batch_size,
