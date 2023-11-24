@@ -3,7 +3,7 @@ import torch.nn as nn
 import torch.nn.parallel
 
 
-class WeightEMA(object):
+class WeightEMA:
     def __init__(
         self,
         model: nn.Module,
