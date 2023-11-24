@@ -20,7 +20,7 @@ class SemiLoss(object):
         x_unl: torch.Tensor,
         y_unl: torch.Tensor,
         epoch: float,
-        lambda_u: float,
+        loss_unl_scale: float,
         epochs: int,
     ):
         probs_u = torch.softmax(x_unl, dim=1)
@@ -33,5 +33,5 @@ class SemiLoss(object):
         return (
             l_x,
             l_u,
-            lambda_u * self.linear_rampup(epoch, epochs),
+            loss_unl_scale * self.linear_rampup(epoch, epochs),
         )

@@ -54,7 +54,7 @@ def train(
     epochs: int,
     device: str,
     train_iters: int,
-    lambda_u: float,
+    unl_loss_scale: float,
     mix_beta_alpha: float,
     sharpen_temp: float,
 ) -> tuple[float, float, float]:
@@ -121,7 +121,7 @@ def train(
             x_unl=y_mix_unl_pred,
             y_unl=y_mix_unl,
             epoch=epoch + batch_idx / train_iters,
-            lambda_u=lambda_u,
+            loss_unl_scale=unl_loss_scale,
             epochs=epochs,
         )
 

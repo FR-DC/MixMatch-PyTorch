@@ -20,14 +20,14 @@ def main(
     batch_size: int = 64,
     lr: float = 0.002,
     train_iteration: int = 1024,
-    ema_decay: float = 0.999,
-    lambda_u: float = 75,
-    alpha: float = 0.75,
-    t: float = 0.5,
+    ema_wgt_decay: float = 0.999,
+    unl_loss_scale: float = 75,
+    mix_beta_alpha: float = 0.75,
+    sharpen_temp: float = 0.5,
     device: str = "cuda",
     seed: int = 42,
-    train_lbl_size=0.005,
-    train_unl_size=0.980,
+    train_lbl_size: int = 0.005,
+    train_unl_size: int = 0.980,
 ):
     random.seed(seed)
     np.random.seed(seed)
@@ -66,7 +66,7 @@ def main(
     val_loss_fn = nn.CrossEntropyLoss()
     train_optim = optim.Adam(model.parameters(), lr=lr)
 
-    ema_optim = WeightEMA(model, ema_model, alpha=ema_decay, lr=lr)
+    ema_optim = WeightEMA(model, ema_model, ema_wgt_decay=ema_wgt_decay, lr=lr)
 
     test_accs = []
     best_acc = 0
@@ -84,10 +84,10 @@ def main(
             epoch=epoch,
             device=device,
             train_iters=train_iteration,
-            lambda_u=lambda_u,
-            mix_beta_alpha=alpha,
+            unl_loss_scale=unl_loss_scale,
+            mix_beta_alpha=mix_beta_alpha,
             epochs=epochs,
-            sharpen_temp=t,
+            sharpen_temp=sharpen_temp,
         )
 
         def val_ema(dl: DataLoader):
