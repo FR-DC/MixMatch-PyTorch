@@ -336,6 +336,7 @@ class WideResNetModule(pl.LightningModule):
         self.log("val_acc", acc, prog_bar=True)
         return loss
 
+    @torch.no_grad()
     def on_after_backward(self) -> None:
         self.ema_updater.step()
 
