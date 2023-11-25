@@ -71,19 +71,69 @@ class CIFAR10SubsetKAug(CIFAR10Subset):
 import pytorch_lightning as pl
 
 
+# TODO: We should make this dataset agnostic, so we can use it for other
+#       datasets.
 @dataclass
-class CIFAR10DataModule(pl.LightningDataModule):
+class SSLCIFAR10DataModule(pl.LightningDataModule):
+    """The CIFAR10 datamodule for semi-supervised learning.
+
+    Notes:
+        This datamodule is configured for SSL on CIFAR10.
+
+        The major difference is that despite the labelled data being smaller
+        than the unlabelled data, the dataloader will sample with replacement
+        to match training iterations. Hence, each epoch will have the same
+        number of training iterations for labelled and unlabelled data.
+
+        The batch size, thus, doesn't affect the number of training iterations,
+        each iteration will have the specified batch size.
+
+        For example:
+            train_lbl_size = 0.005 (250)
+            train_unl_size = 0.980 (49000)
+            batch_size = 48
+            train_iters = 1024
+
+            In pseudocode
+
+            for epoch in range(epochs):
+                for train_iter in range(1024):
+                    lbl = sample(lbl_pool, 48)
+                    unl = sample(unl_pool, 48)
+
+            Each epoch will have 1024 training iterations.
+            Each training iteration will pull 48 labelled and 48 unlabelled
+            samples from the above pools, with replacement. Therefore, unlike
+            traditional dataloaders, we can see repeated samples in the same
+            epoch. (replacement=False in our RandomSampler only prevents
+            replacements within a minibatch)
+
+    Args:
+        dir: The directory to store the data.
+        train_lbl_size: The size of the labelled training set.
+        train_unl_size: The size of the unlabelled training set.
+        batch_size: The batch size to use.
+        train_iters: The number of training iterations per epoch.
+        seed: The seed to use for reproducibility. If None, no seed is used.
+        k_augs: The number of augmentations to use for unlabelled data.
+        num_workers: The number of workers to use for the dataloaders.
+        persistent_workers: Whether to use persistent workers for the dataloaders.
+        pin_memory: Whether to pin memory for the dataloaders.
+    """
     dir: Path | str
-    n_train_lbl: float = 0.005
-    n_train_unl: float = 0.980
+    train_lbl_size: float = 0.005
+    train_unl_size: float = 0.980
     batch_size: int = 48
     train_iters: int = 1024
-    num_workers: int = 0
     seed: int | None = 42
-    train_ds: CIFAR10 = field(init=False)
+    k_augs: int = 2
+    num_workers: int = 0
+    persistent_workers: bool = True
+    pin_memory: bool = True
+    train_lbl_ds: CIFAR10 = field(init=False)
+    train_unl_ds: CIFAR10 = field(init=False)
     val_ds: CIFAR10 = field(init=False)
     test_ds: CIFAR10 = field(init=False)
-    k_augs: int = 2
 
     def __post_init__(self):
         super().__init__()
@@ -94,9 +144,11 @@ class CIFAR10DataModule(pl.LightningDataModule):
         self.ds_args = dict(
             root=self.dir, train=True, download=True, transform=tf_preproc
         )
-        self.dl_args = dict(batch_size=self.batch_size,
-                            persistent_workers=True,
-                            pin_memory=True)
+        self.dl_args = dict(
+            batch_size=self.batch_size,
+            persistent_workers=self.persistent_workers,
+            pin_memory=self.pin_memory,
+        )
 
     def setup(self, stage: str | None = None):
         src_train_ds = CIFAR10(
@@ -113,8 +165,8 @@ class CIFAR10DataModule(pl.LightningDataModule):
         )
 
         n_train = len(src_train_ds)
-        n_train_unl = int(n_train * self.n_train_unl)
-        n_train_lbl = int(n_train * self.n_train_lbl)
+        n_train_unl = int(n_train * self.train_unl_size)
+        n_train_lbl = int(n_train * self.train_lbl_size)
         n_val = int(n_train - n_train_unl - n_train_lbl)
 
         targets = np.array(src_train_ds.targets)
@@ -154,8 +206,9 @@ class CIFAR10DataModule(pl.LightningDataModule):
         Returns:
             A list of two dataloaders, the first for labelled data, the second
             for unlabelled data.
-
         """
+        lbl_workers = self.num_workers // (self.k_augs + 1)
+        unl_workers = self.num_workers - lbl_workers
         return [
             DataLoader(
                 self.train_lbl_ds,
@@ -164,8 +217,8 @@ class CIFAR10DataModule(pl.LightningDataModule):
                     num_samples=self.batch_size * self.train_iters,
                     replacement=False,
                 ),
+                num_workers=lbl_workers,
                 **self.dl_args,
-                num_workers=self.num_workers // 2,
             ),
             DataLoader(
                 self.train_unl_ds,
@@ -174,8 +227,8 @@ class CIFAR10DataModule(pl.LightningDataModule):
                     num_samples=self.batch_size * self.train_iters,
                     replacement=False,
                 ),
+                num_workers=unl_workers,
                 **self.dl_args,
-                num_workers=self.num_workers // 2,
             ),
         ]
 
