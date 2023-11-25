@@ -120,6 +120,7 @@ class SSLCIFAR10DataModule(pl.LightningDataModule):
         persistent_workers: Whether to use persistent workers for the dataloaders.
         pin_memory: Whether to pin memory for the dataloaders.
     """
+
     dir: Path | str
     train_lbl_size: float = 0.005
     train_unl_size: float = 0.980
