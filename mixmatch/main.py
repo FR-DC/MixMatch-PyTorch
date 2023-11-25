@@ -20,7 +20,7 @@ def main(
     batch_size: int = 64,
     lr: float = 0.002,
     train_iteration: int = 1024,
-    ema_wgt_decay: float = 0.999,
+    ema_lr: float = 0.999,
     unl_loss_scale: float = 75,
     mix_beta_alpha: float = 0.75,
     sharpen_temp: float = 0.5,
@@ -36,7 +36,7 @@ def main(
         batch_size: The batch size to use.
         lr: The learning rate to use.
         train_iteration: The number of iterations to train for.
-        ema_wgt_decay: The weight decay to use for the EMA model.
+        ema_lr: The learning rate to use for the EMA.
         unl_loss_scale: The scaling factor for the unlabeled loss.
         mix_beta_alpha: The beta alpha to use for the mixup.
         sharpen_temp: The temperature to use for sharpening.
@@ -81,7 +81,7 @@ def main(
     val_loss_fn = nn.CrossEntropyLoss()
     train_optim = optim.Adam(model.parameters(), lr=lr)
 
-    ema_optim = WeightEMA(model, ema_model, ema_wgt_decay=ema_wgt_decay, lr=lr)
+    ema_optim = WeightEMA(model, ema_model, ema_lr=ema_lr)
 
     test_accs = []
     best_acc = 0
