@@ -94,7 +94,9 @@ class CIFAR10DataModule(pl.LightningDataModule):
         self.ds_args = dict(
             root=self.dir, train=True, download=True, transform=tf_preproc
         )
-        self.dl_args = dict(batch_size=self.batch_size, pin_memory=True)
+        self.dl_args = dict(batch_size=self.batch_size,
+                            persistent_workers=True,
+                            pin_memory=True)
 
     def setup(self, stage: str | None = None):
         src_train_ds = CIFAR10(
