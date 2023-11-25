@@ -204,7 +204,11 @@ class WideResNetModule(pl.LightningModule):
         for param in self.ema_model.parameters():
             param.detach_()
 
-        self.ema_updater = WeightEMA(self.model, self.ema_model, ema_lr=self.ema_lr)
+        self.ema_updater = WeightEMA(
+            model=self.model,
+            ema_model=self.ema_model,
+            ema_lr=self.ema_lr
+        )
 
     def forward(self, x):
         return self.model(x)
@@ -255,7 +259,7 @@ class WideResNetModule(pl.LightningModule):
         x_unls: list[torch.Tensor],
     ) -> torch.Tensor:
         """Guess labels from the unlabelled data"""
-        y_unls: list[torch.Tensor] = [torch.softmax(self(u), dim=1) for u in x_unls]
+        y_unls: list[torch.Tensor] = [torch.softmax(self.ema_model(u), dim=1) for u in x_unls]
         # The sum will sum the tensors in the list, it doesn't reduce the tensors
         y_unl = sum(y_unls) / len(y_unls)
         return y_unl
@@ -319,7 +323,7 @@ class WideResNetModule(pl.LightningModule):
 
     def validation_step(self, batch, batch_idx):
         x, y = batch
-        y_pred = self(x)
+        y_pred = self.ema_model(x)
         loss = F.cross_entropy(y_pred, y.long())
 
         acc = accuracy(

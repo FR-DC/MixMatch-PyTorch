@@ -10,8 +10,6 @@ class WeightEMA:
         ema_model: nn.Module,
         ema_lr: float,
     ):
-        self.model = model
-        self.ema_model = ema_model
         self.ema_lr = ema_lr
         self.params = list(model.state_dict().values())
         self.ema_params = list(ema_model.state_dict().values())
