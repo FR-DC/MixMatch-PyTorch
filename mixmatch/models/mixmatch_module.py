@@ -13,7 +13,7 @@ from torch.nn.functional import one_hot
 from torchmetrics.functional import accuracy
 
 import utils.interleave
-from utils import WeightEMA
+from utils.ema import WeightEMA
 
 
 # The eq=False is to prevent overriding hash

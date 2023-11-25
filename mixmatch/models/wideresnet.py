@@ -3,8 +3,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import torch.nn.parallel
-import torch.nn.parallel
 
 
 class BasicBlock(nn.Module):
