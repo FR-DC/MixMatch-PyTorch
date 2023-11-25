@@ -5,7 +5,7 @@ from mixmatch.dataset.cifar10 import SSLCIFAR10DataModule
 from mixmatch.models.wideresnet import WideResNet
 from mixmatch.models.mixmatch_module import MixMatchModule
 
-epochs: int = 1024
+epochs: int = 100
 batch_size: int = 64
 k_augs: int = 2
 lr: float = 0.002
@@ -32,7 +32,10 @@ dm = SSLCIFAR10DataModule(
 )
 
 mm_model = MixMatchModule(
-    model=WideResNet(n_classes=10, depth=28, width=2, drop_rate=0.0, seed=seed),
+    model_fn=lambda: WideResNet(
+        n_classes=10, depth=28, width=2, drop_rate=0.0, seed=seed
+    ),
+    n_classes=10,
     sharpen_temp=sharpen_temp,
     mix_beta_alpha=mix_beta_alpha,
     unl_loss_scale=unl_loss_scale,

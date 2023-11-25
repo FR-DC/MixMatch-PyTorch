@@ -1,5 +1,5 @@
 from copy import deepcopy
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import Callable
 
 import numpy as np
@@ -42,7 +42,8 @@ class MixMatchModule(pl.LightningModule):
         weight_decay: The weight decay to use for the optimizer.
     """
 
-    model: nn.Module
+    model_fn: Callable[[], nn.Module]
+    n_classes: int = 10
     sharpen_temp: float = 0.5
     mix_beta_alpha: float = 0.75
     unl_loss_scale: float = 75
@@ -63,8 +64,11 @@ class MixMatchModule(pl.LightningModule):
         [torch.Tensor, torch.Tensor], torch.Tensor
     ] = lambda pred, tgt: torch.mean((torch.softmax(pred, dim=1) - tgt) ** 2)
 
+    model: nn.Module = field(init=False)
+
     def __post_init__(self):
         super().__init__()
+        self.model = self.model_fn()
         self.ema_model = deepcopy(self.model)
         for param in self.ema_model.parameters():
             param.detach_()
@@ -148,12 +152,12 @@ class MixMatchModule(pl.LightningModule):
             x_mix = list(torch.split(x_mix, batch_size))
 
             # Interleave to get a consistent Batch Norm Calculation
-            x_mix = utils.interleave(x_mix, batch_size)
+            x_mix = utils.interleave.interleave(x_mix, batch_size)
 
             y_mix_pred = [self(x) for x in x_mix]
 
             # Un-interleave to shuffle back to original order
-            y_mix_pred = utils.interleave(y_mix_pred, batch_size)
+            y_mix_pred = utils.interleave.interleave(y_mix_pred, batch_size)
 
             y_mix_lbl_pred = y_mix_pred[0]
             y_mix_lbl = y_mix[:batch_size]
