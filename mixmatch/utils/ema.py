@@ -11,14 +11,12 @@ class WeightEMA:
         ema_lr: float,
     ):
         self.ema_lr = ema_lr
-        self.params = list(model.state_dict().values())
-        self.ema_params = list(ema_model.state_dict().values())
-
-        for param, ema_param in zip(self.params, self.ema_params):
-            param.data.copy_(ema_param.data)
+        self.model = model
+        self.ema_model = ema_model
 
     def step(self):
-        for param, ema_param in zip(self.params, self.ema_params):
+        for param, ema_param in zip(self.model.parameters(),
+                                    self.ema_model.parameters()):
             if ema_param.dtype == torch.float32:
                 ema_param.mul_(1 - self.ema_lr)
                 ema_param.add_(param * self.ema_lr)
