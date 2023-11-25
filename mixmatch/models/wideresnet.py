@@ -12,7 +12,7 @@ from torch.nn.functional import one_hot
 from torchmetrics.functional import accuracy
 
 from utils import SemiLoss, WeightEMA
-from utils.interleave import interleave
+import utils.interleave
 
 
 class BasicBlock(nn.Module):
@@ -189,6 +189,9 @@ class WideResNetModule(pl.LightningModule):
     lr: float = 0.002
     weight_decay: float = 0.0005
 
+    # See our wiki for details on interleave
+    interleave: bool = False
+
     train_loss_fn: SemiLoss = SemiLoss()
 
     def __post_init__(self):
@@ -277,18 +280,18 @@ class WideResNetModule(pl.LightningModule):
         y = torch.cat([y_lbl, y_unl, y_unl], dim=0)
         x_mix, y_mix = self.mix_up(x, y, self.mix_beta_alpha)
 
-        is_interleave = True
-        if is_interleave:
-            # interleave labeled and unlabeled samples between batches to
-            # get correct batchnorm calculation
+        if self.interleave:
+            # This performs interleaving, see our wiki for details.
             batch_size = x_lbl.shape[0]
             x_mix = list(torch.split(x_mix, batch_size))
-            x_mix = interleave(x_mix, batch_size)
+
+            # Interleave to get a consistent Batch Norm Calculation
+            x_mix = utils.interleave(x_mix, batch_size)
 
             y_mix_pred = [self(x) for x in x_mix]
 
-            # put interleaved samples back
-            y_mix_pred = interleave(y_mix_pred, batch_size)
+            # Un-interleave to shuffle back to original order
+            y_mix_pred = utils.interleave(y_mix_pred, batch_size)
 
             y_mix_lbl_pred = y_mix_pred[0]
             y_mix_lbl = y_mix[:batch_size]
@@ -336,6 +339,8 @@ class WideResNetModule(pl.LightningModule):
         self.log("val_acc", acc, prog_bar=True)
         return loss
 
+    # PyTorch Lightning doesn't automatically no_grads the EMA step.
+    # It's important to keep this to avoid a memory leak.
     @torch.no_grad()
     def on_after_backward(self) -> None:
         self.ema_updater.step()
