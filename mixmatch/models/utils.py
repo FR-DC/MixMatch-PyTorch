@@ -11,7 +11,7 @@ def cast(params, dtype='float'):
     if isinstance(params, dict):
         return {k: cast(v, dtype) for k, v in params.items()}
     else:
-        return getattr(params.cuda() if torch.cuda.is_available() else params, dtype)()
+        return getattr(params, dtype)()
 
 
 def conv_params(ni, no, k=1):
