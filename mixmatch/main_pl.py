@@ -55,7 +55,13 @@ trainer = pl.Trainer(
     accelerator="gpu",
     callbacks=[
         pl.callbacks.LearningRateMonitor(),
-        pl.callbacks.StochasticWeightAveraging(swa_lrs=lr)
+        pl.callbacks.StochasticWeightAveraging(swa_lrs=lr),
+        pl.callbacks.ModelCheckpoint(
+            monitor="val_acc",
+            filename="mm-{epoch:02d}-{val_acc:.2f}",
+            save_top_k=1,
+            mode="max",
+        ),
     ],
 )
 
