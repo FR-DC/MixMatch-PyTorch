@@ -75,18 +75,16 @@ class MixMatchModule(pl.LightningModule):
         for param in self.ema_model.parameters():
             param.detach_()
 
-        self.ema_updater = WeightEMA(
-            model=self.model, ema_model=self.ema_model, ema_lr=self.ema_lr
-        )
+        self.ema_updater = WeightEMA(model=self.model, ema_model=self.ema_model)
 
     def forward(self, x):
         return self.model(x)
 
     @staticmethod
     def mix_up(
-            x: torch.Tensor,
-            y: torch.Tensor,
-            alpha: float,
+        x: torch.Tensor,
+        y: torch.Tensor,
+        alpha: float,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Mix up the data
 
@@ -124,8 +122,8 @@ class MixMatchModule(pl.LightningModule):
         return y_sharp
 
     def guess_labels(
-            self,
-            x_unls: list[torch.Tensor],
+        self,
+        x_unls: list[torch.Tensor],
     ) -> torch.Tensor:
         """Guess labels from the unlabelled data"""
         y_unls: list[torch.Tensor] = [
@@ -138,7 +136,9 @@ class MixMatchModule(pl.LightningModule):
     @property
     def progress(self):
         # Progress is a linear ramp from 0 to 1 over the course of training.
-        return (self.global_step / self.trainer.num_training_batches) / self.trainer.max_epochs
+        return (
+            self.global_step / self.trainer.num_training_batches
+        ) / self.trainer.max_epochs
 
     def training_step(self, batch, batch_idx):
         # Progress is a linear ramp from 0 to 1 over the course of training.q
