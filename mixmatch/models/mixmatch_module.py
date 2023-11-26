@@ -39,7 +39,6 @@ class MixMatchModule(pl.LightningModule):
         mix_beta_alpha: The alpha to use for the beta distribution when mixing.
         unl_loss_scale: The scale to use for the unsupervised loss.
         ema_lr: The learning rate to use for the EMA.
-        ema_lr_exp: The exponent decay to use for the EMA learning rate.
         lr: The learning rate to use for the optimizer.
         weight_decay: The weight decay to use for the optimizer.
     """
@@ -50,7 +49,6 @@ class MixMatchModule(pl.LightningModule):
     mix_beta_alpha: float = 0.75
     unl_loss_scale: float = 75
     ema_lr: float = 0.001
-    ema_lr_exp: float = 0.25
     lr: float = 0.002
     weight_decay: float = 0.00004
 
@@ -211,9 +209,7 @@ class MixMatchModule(pl.LightningModule):
     # It's important to keep this to avoid a memory leak.
     @torch.no_grad()
     def on_after_backward(self) -> None:
-        ema_update_lr = self.ema_lr * (self.ema_lr_exp ** self.progress)
-        self.log("ema_update_lr", ema_update_lr, prog_bar=True)
-        self.ema_updater.update(ema_update_lr)
+        self.ema_updater.update(self.ema_lr)
 
     def configure_optimizers(self):
         return torch.optim.Adam(
