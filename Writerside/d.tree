@@ -6,6 +6,7 @@
                  name="MixMatch PyTorch Documentation"
                  start-page="home.md">
 
+    <toc-element topic="WideResNet.md"/>
     <toc-element topic="home.md"/>
     <toc-element toc-title="Pipeline">
         <toc-element topic="Pipeline.md"/>
