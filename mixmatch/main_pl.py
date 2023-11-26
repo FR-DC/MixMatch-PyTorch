@@ -1,18 +1,21 @@
+import numpy as np
 import pytorch_lightning as pl
 import torch
 
 from mixmatch.dataset.cifar10 import SSLCIFAR10DataModule
-from mixmatch.models.wideresnet import WideResNet
 from mixmatch.models.mixmatch_module import MixMatchModule
+from mixmatch.models.wideresnet import WideResNet
 
 epochs: int = 100
 batch_size: int = 64
 k_augs: int = 2
-lr: float = 0.002
+# Scale LR due to removed interleaving
+lr: float = 0.002 * np.sqrt((k_augs + 1))
 weight_decay: float = 0.00004
-ema_lr: float = 0.001
+ema_lr: float = 0.005
+ema_lr_exp: float = 1
 train_iters: int = 1024
-unl_loss_scale: float = 75
+unl_loss_scale: float = 100
 mix_beta_alpha: float = 0.75
 sharpen_temp: float = 0.5
 device: str = "cuda"
@@ -40,12 +43,20 @@ mm_model = MixMatchModule(
     mix_beta_alpha=mix_beta_alpha,
     unl_loss_scale=unl_loss_scale,
     ema_lr=ema_lr,
+    ema_lr_exp=ema_lr_exp,
     lr=lr,
     weight_decay=weight_decay,
 )
 
 torch.set_float32_matmul_precision("high")
 
-trainer = pl.Trainer(max_epochs=epochs, accelerator="gpu")
+trainer = pl.Trainer(
+    max_epochs=epochs,
+    accelerator="gpu",
+    callbacks=[
+        pl.callbacks.LearningRateMonitor(),
+        pl.callbacks.StochasticWeightAveraging(swa_lrs=lr)
+    ],
+)
 
 trainer.fit(mm_model, dm)
