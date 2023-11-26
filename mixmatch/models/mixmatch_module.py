@@ -1,5 +1,5 @@
 from copy import deepcopy
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 from typing import Callable
 
 import numpy as np
@@ -33,11 +33,13 @@ class MixMatchModule(pl.LightningModule):
         how to implement a new dataset.
 
     Args:
-        model: The model to train.
+        model_fn: The function to use to create the model.
+        n_classes: The number of classes in the dataset.
         sharpen_temp: The temperature to use for sharpening.
         mix_beta_alpha: The alpha to use for the beta distribution when mixing.
         unl_loss_scale: The scale to use for the unsupervised loss.
         ema_lr: The learning rate to use for the EMA.
+        ema_lr_exp: The exponent decay to use for the EMA learning rate.
         lr: The learning rate to use for the optimizer.
         weight_decay: The weight decay to use for the optimizer.
     """
@@ -48,8 +50,9 @@ class MixMatchModule(pl.LightningModule):
     mix_beta_alpha: float = 0.75
     unl_loss_scale: float = 75
     ema_lr: float = 0.001
+    ema_lr_exp: float = 0.25
     lr: float = 0.002
-    weight_decay: float = 0.0005
+    weight_decay: float = 0.00004
 
     # See our wiki for details on interleave
     interleave: bool = False
@@ -64,10 +67,11 @@ class MixMatchModule(pl.LightningModule):
         [torch.Tensor, torch.Tensor], torch.Tensor
     ] = lambda pred, tgt: torch.mean((torch.softmax(pred, dim=1) - tgt) ** 2)
 
-    model: nn.Module = field(init=False)
-
     def __post_init__(self):
         super().__init__()
+        self.save_hyperparameters(
+            ignore=["model_fn", "train_lbl_loss", "train_unl_loss", "model"]
+        )
         self.model = self.model_fn()
         self.ema_model = deepcopy(self.model)
         for param in self.ema_model.parameters():
@@ -82,9 +86,9 @@ class MixMatchModule(pl.LightningModule):
 
     @staticmethod
     def mix_up(
-        x: torch.Tensor,
-        y: torch.Tensor,
-        alpha: float,
+            x: torch.Tensor,
+            y: torch.Tensor,
+            alpha: float,
     ) -> tuple[torch.Tensor, torch.Tensor]:
         """Mix up the data
 
@@ -122,8 +126,8 @@ class MixMatchModule(pl.LightningModule):
         return y_sharp
 
     def guess_labels(
-        self,
-        x_unls: list[torch.Tensor],
+            self,
+            x_unls: list[torch.Tensor],
     ) -> torch.Tensor:
         """Guess labels from the unlabelled data"""
         y_unls: list[torch.Tensor] = [
@@ -133,7 +137,13 @@ class MixMatchModule(pl.LightningModule):
         y_unl = sum(y_unls) / len(y_unls)
         return y_unl
 
+    @property
+    def progress(self):
+        # Progress is a linear ramp from 0 to 1 over the course of training.
+        return (self.global_step / self.trainer.num_training_batches) / self.trainer.max_epochs
+
     def training_step(self, batch, batch_idx):
+        # Progress is a linear ramp from 0 to 1 over the course of training.q
         (x_lbl, y_lbl), (x_unls, _) = batch
         x_lbl = x_lbl[0]
         y_lbl = one_hot(y_lbl.long(), num_classes=self.n_classes)
@@ -176,15 +186,12 @@ class MixMatchModule(pl.LightningModule):
 
         # The scale is a linear ramp up from 0 to self.unl_loss_scale
         # over the course of training.
-        loss_unl_scale = (
-            (self.current_epoch + batch_idx / self.trainer.num_training_batches)
-            / self.trainer.max_epochs
-            * self.unl_loss_scale
-        )
+        loss_unl_scale = self.progress * self.unl_loss_scale
 
         loss = loss_lbl + loss_unl * loss_unl_scale
 
-        self.log("train_loss", loss, prog_bar=True)
+        self.log("loss_unl_scale", loss_unl_scale, prog_bar=True)
+        self.log("train_loss", loss)
         self.log("train_loss_lbl", loss_lbl)
         self.log("train_loss_unl", loss_unl)
 
@@ -204,7 +211,9 @@ class MixMatchModule(pl.LightningModule):
     # It's important to keep this to avoid a memory leak.
     @torch.no_grad()
     def on_after_backward(self) -> None:
-        self.ema_updater.step()
+        ema_update_lr = self.ema_lr * (self.ema_lr_exp ** self.progress)
+        self.log("ema_update_lr", ema_update_lr, prog_bar=True)
+        self.ema_updater.update(ema_update_lr)
 
     def configure_optimizers(self):
         return torch.optim.Adam(
