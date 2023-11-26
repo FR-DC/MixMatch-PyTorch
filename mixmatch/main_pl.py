@@ -13,7 +13,6 @@ k_augs: int = 2
 lr: float = 0.002 * np.sqrt((k_augs + 1))
 weight_decay: float = 0.00004
 ema_lr: float = 0.005
-ema_lr_exp: float = 1
 train_iters: int = 1024
 unl_loss_scale: float = 100
 mix_beta_alpha: float = 0.75
@@ -43,7 +42,6 @@ mm_model = MixMatchModule(
     mix_beta_alpha=mix_beta_alpha,
     unl_loss_scale=unl_loss_scale,
     ema_lr=ema_lr,
-    ema_lr_exp=ema_lr_exp,
     lr=lr,
     weight_decay=weight_decay,
 )
