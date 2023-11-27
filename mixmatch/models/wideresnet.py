@@ -3,8 +3,6 @@ import math
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-from matplotlib import pyplot as plt
-from torchviz import make_dot
 
 
 class BasicBlock(nn.Module):
