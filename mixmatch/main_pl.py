@@ -7,14 +7,12 @@ import torch
 from mixmatch.dataset.cifar10 import SSLCIFAR10DataModule
 from mixmatch.models.mixmatch_module import MixMatchModule
 from mixmatch.models.wideresnet import WideResNet
-from mixmatch.utils.ease import ease_out
 
 epochs: int = 100
 batch_size: int = 64
 k_augs: int = 2
 # Scale LR due to removed interleaving
 lr: float = 0.002 * np.sqrt((k_augs + 1))
-loss_unl_scaler = ease_out(50, 0.95)
 weight_decay: float = 0.00004
 ema_lr: float = 0.005
 train_iters: int = 1024
@@ -24,6 +22,24 @@ device: str = "cuda"
 seed: int | None = 42
 train_lbl_size: float = 0.005
 train_unl_size: float = 0.980
+
+# This function linearly increases scaler from 0 to MAX_UNL_SCALER over EPOCHS_TO_MAX_UNL_SCALER epochs, then
+# keeps it at MAX_UNL_SCALER for the rest of the training.
+#
+#                ^
+#                |
+# MAX_UNL_SCALER |   +---------------------->
+#                |  /.
+#                | / .
+#                |/  .
+#                +---+---------------------->
+#                0 EPOCHS_TO_MAX_UNL_SCALER EPOCHS
+
+epochs_to_max_unl_scaler: int = 100
+max_unl_scaler: int = 50
+loss_unl_scaler = lambda progress: min(
+    progress * epochs * max_unl_scaler / epochs_to_max_unl_scaler, max_unl_scaler
+)
 
 dm = SSLCIFAR10DataModule(
     dir=Path(__file__).parents[1] / "tests/data",
