@@ -110,6 +110,7 @@ class _recursive_dict(defaultdict):
     def __str__(self, indent=None):
         """Representation of self as a string."""
         import json
+
         return json.dumps(self.to_dict(), indent=indent)
 
 
@@ -152,26 +153,25 @@ def nested_dict_from_dict(orig_dict, nd):
 
 def _recursive_update(nd, other):
     for key, value in iteritems(other):
-        #print ("key=", key)
+        # print ("key=", key)
         if isinstance(value, (dict,)):
-
             # recursive update if my item is nested_dict
             if isinstance(nd[key], (_recursive_dict,)):
-                #print ("recursive update", key, type(nd[key]))
+                # print ("recursive update", key, type(nd[key]))
                 _recursive_update(nd[key], other[key])
 
             # update if my item is dict
             elif isinstance(nd[key], (dict,)):
-                #print ("update", key, type(nd[key]))
+                # print ("update", key, type(nd[key]))
                 nd[key].update(other[key])
 
             # overwrite
             else:
-                #print ("self not nested dict or dict: overwrite", key)
+                # print ("self not nested dict or dict: overwrite", key)
                 nd[key] = value
         # other not dict: overwrite
         else:
-            #print ("other not dict: overwrite", key)
+            # print ("other not dict: overwrite", key)
             nd[key] = value
     return nd
 
@@ -224,8 +224,10 @@ class nested_dict(_recursive_dict):
                 defaultdict.__init__(self, self.factory)
                 return
 
-        raise Exception("nested_dict should be initialised with either "
-                        "1) the number of nested levels and an optional type, or "
-                        "2) an existing dict to be converted into a nested dict "
-                        "(factory = %s. len(param) = %d, param = %s"
-                        % (self.factory, len(param), param))
+        raise Exception(
+            "nested_dict should be initialised with either "
+            "1) the number of nested levels and an optional type, or "
+            "2) an existing dict to be converted into a nested dict "
+            "(factory = %s. len(param) = %d, param = %s"
+            % (self.factory, len(param), param)
+        )
